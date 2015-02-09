@@ -33,9 +33,9 @@ import org.junit.runner.RunWith;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.orcid.api.common.WebDriverHelper;
-import org.orcid.integration.api.helper.InitializeDataHelper;
 import org.orcid.integration.api.helper.OauthHelper;
 import org.orcid.integration.api.t2.T2OAuthAPIService;
+import org.orcid.integration.blackbox.helper.InitializeDataHelper;
 import org.orcid.jaxb.model.clientgroup.GroupType;
 import org.orcid.jaxb.model.clientgroup.OrcidClient;
 import org.orcid.jaxb.model.message.Affiliation;
@@ -126,11 +126,11 @@ public class PerActivityAPINewScopesTest {
         if(PojoUtil.isEmpty(password))
             password = String.valueOf(System.currentTimeMillis());
         if(user == null)
-            user = idh.createProfile(email, password);
+            user = idh.createProfile(email, password, null);
         if(member == null)
             member = idh.createMember(GroupType.BASIC);
         if(client == null)
-            client = idh.createClient(member.getGroupOrcid().getValue(), getRedirectUri());                
+            client = idh.createClient(member.getGroupOrcid().getValue(), getRedirectUri(), null, null);                
     }
 
     @Before

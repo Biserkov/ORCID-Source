@@ -150,8 +150,8 @@ public class ClientDetailsManagerImpl implements ClientDetailsManager {
      * Creates a new {@link ClientDetailsEntity} using the component parts, and
      * not the underyling entity directly.
      * 
-     * @param name
-     *            The client name
+     * @param groupId
+     *            The group id
      * @param description
      *            The client description
      * @param website
@@ -177,16 +177,16 @@ public class ClientDetailsManagerImpl implements ClientDetailsManager {
      * @return
      */
     @Override
-    public ClientDetailsEntity createClientDetails(String orcid, String name, String description, String website, String clientId, String clientSecret,
+    public ClientDetailsEntity createClientDetails(String groupId, String name, String description, String website, String clientId, String clientSecret,
             ClientType clientType, Set<String> clientScopes, Set<String> clientResourceIds, Set<String> clientAuthorizedGrantTypes,
             Set<RedirectUri> clientRegisteredRedirectUris, List<String> clientGrantedAuthorities) {
 
-        ProfileEntity profileEntity = profileEntityManager.findByOrcid(orcid);
-        if (profileEntity == null) {
-            throw new IllegalArgumentException("The ORCID does not exist for " + orcid);
+        ProfileEntity groupProfileEntity = profileEntityManager.findByOrcid(groupId);
+        if (groupProfileEntity == null) {
+            throw new IllegalArgumentException("The Group ID does not exist for " + groupId);
         }
 
-        return populateClientDetailsEntity(clientId, profileEntity, name, description, website, clientSecret, clientType, clientScopes, clientResourceIds,
+        return populateClientDetailsEntity(clientId, groupProfileEntity, name, description, website, clientSecret, clientType, clientScopes, clientResourceIds,
                 clientAuthorizedGrantTypes, clientRegisteredRedirectUris, clientGrantedAuthorities);
     }
 
@@ -275,7 +275,7 @@ public class ClientDetailsManagerImpl implements ClientDetailsManager {
         return clientAuthorisedGrantTypeEntities;
     }
 
-    public ClientDetailsEntity populateClientDetailsEntity(String clientId, ProfileEntity profileEntity, String name, String description, String website,
+    public ClientDetailsEntity populateClientDetailsEntity(String clientId, ProfileEntity groupProfileEntity, String name, String description, String website,
             String clientSecret, ClientType clientType, Set<String> clientScopes, Set<String> clientResourceIds, Set<String> clientAuthorizedGrantTypes,
             Set<RedirectUri> clientRegisteredRedirectUris, List<String> clientGrantedAuthorities) {
         ClientDetailsEntity clientDetailsEntity = new ClientDetailsEntity();
@@ -292,7 +292,7 @@ public class ClientDetailsManagerImpl implements ClientDetailsManager {
         clientDetailsEntity.setClientRegisteredRedirectUris(getClientRegisteredRedirectUris(clientRegisteredRedirectUris, clientDetailsEntity));
         clientDetailsEntity.setPersistentTokensEnabled(true);
         clientDetailsEntity.setClientGrantedAuthorities(getClientGrantedAuthorities(clientGrantedAuthorities, clientDetailsEntity));
-        clientDetailsEntity.setGroupProfile(profileEntity);
+        clientDetailsEntity.setGroupProfile(groupProfileEntity);
         return createClientDetails(clientDetailsEntity);
     }
 

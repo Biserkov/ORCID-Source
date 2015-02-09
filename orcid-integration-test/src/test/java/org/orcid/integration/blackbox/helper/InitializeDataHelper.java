@@ -14,7 +14,7 @@
  *
  * =============================================================================
  */
-package org.orcid.integration.api.helper;
+package org.orcid.integration.blackbox.helper;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -47,6 +47,7 @@ import org.orcid.jaxb.model.message.FamilyName;
 import org.orcid.jaxb.model.message.GivenNames;
 import org.orcid.jaxb.model.message.OrcidBio;
 import org.orcid.jaxb.model.message.OrcidHistory;
+import org.orcid.jaxb.model.message.OrcidIdentifier;
 import org.orcid.jaxb.model.message.OrcidInternal;
 import org.orcid.jaxb.model.message.OrcidProfile;
 import org.orcid.jaxb.model.message.PersonalDetails;
@@ -137,14 +138,16 @@ public class InitializeDataHelper {
         clientDetailsDao.removeClient(clientId);
     }
     
-    public Group createMember(GroupType type) throws Exception {
+    public Group createMember(GroupType type, String memberId) throws Exception {
         String name = type.value() + System.currentTimeMillis() + "@orcid-integration-test.com";
         Group group = new Group();
         group.setEmail(Text.valueOf(name));
         group.setGroupName(Text.valueOf(name));
         group.setType(Text.valueOf(type.value()));
         group.setErrors(new ArrayList<String>());
-
+        if(!PojoUtil.isEmpty(memberId))
+            group.setGroupOrcid(Text.valueOf(memberId));
+        
         OrcidClientGroup clientGroup = orcidClientGroupManager.createGroup(group.toOrcidClientGroup());
         assertNotNull(clientGroup);
         assertFalse(PojoUtil.isEmpty(clientGroup.getGroupOrcid()));
@@ -152,7 +155,7 @@ public class InitializeDataHelper {
         return group;
     }
 
-    public OrcidClient createClient(String groupOrcid, String redirectUri) throws Exception {
+    public OrcidClient createClient(String groupOrcid, String redirectUri, String clientId, String clientSecret) throws Exception {
         GroupType groupType = profileDao.getGroupType(groupOrcid);
         ClientType clientType = null;
         if(groupType == null)
@@ -193,8 +196,18 @@ public class InitializeDataHelper {
         String description = value;
         String website = value + "_website";
             
-        ClientDetailsEntity clientDetails = clientDetailsManager.createClientDetails(groupOrcid, name, description, website, clientType, createScopes(clientType),
-                clientResourceIds, clientAuthorizedGrantTypes, redirectUrisToAdd, clientGrantedAuthorities);
+        
+        ClientDetailsEntity clientDetails = null;
+        
+        if(PojoUtil.isEmpty(clientId)) {            
+            clientDetails = clientDetailsManager.createClientDetails(groupOrcid, name, description, website, clientType, createScopes(clientType),
+                    clientResourceIds, clientAuthorizedGrantTypes, redirectUrisToAdd, clientGrantedAuthorities);
+        } else {
+            if(PojoUtil.isEmpty(clientSecret))
+                throw new Exception("Client secret cannot be null");
+            clientDetails = clientDetailsManager.createClientDetails(groupOrcid, name, description, website, clientId, encryptionManager.encryptForInternalUse(clientSecret), clientType, createScopes(clientType),
+                    clientResourceIds, clientAuthorizedGrantTypes, redirectUrisToAdd, clientGrantedAuthorities);
+        }                                
         
         OrcidClient client =  adapter.toOrcidClient(clientDetails);
         //Decrypt the client secret
@@ -202,7 +215,13 @@ public class InitializeDataHelper {
         return client;
     }
     
-    public OrcidProfile createProfile(String email, String password) throws Exception {
+    public OrcidProfile createProfile(String email, String password, String orcid) throws Exception {        
+        if(!PojoUtil.isEmpty(orcid)) {
+            if(profileDao.exists(orcid)) {
+                throw new Exception("Orcid '" + orcid + "' already exists");
+            }
+        }
+                
         Text emailText = Text.valueOf(email);
         Text passwordText = Text.valueOf(password);
         Registration registration = new Registration();
@@ -212,6 +231,10 @@ public class InitializeDataHelper {
         registration.setPassword(passwordText);
         registration.setPasswordConfirm(passwordText);
         OrcidProfile orcidProfile = toProfile(registration);
+        if(!PojoUtil.isEmpty(orcid)) {
+            OrcidIdentifier orcidIdentifier = new OrcidIdentifier();
+            orcidIdentifier.setPath(orcid);
+        }        
         orcidProfile = orcidProfileManager.createOrcidProfile(orcidProfile);
         return orcidProfile;
     }
@@ -270,5 +293,13 @@ public class InitializeDataHelper {
         default:
             throw new IllegalArgumentException("Unsupported client type: " + clientType);
         }
+    }
+    
+    public boolean userExists(String orcid) {
+        return profileDao.exists(orcid);
+    }
+    
+    public boolean clientExists(String clientId) {
+        return clientDetailsDao.exists(clientId);
     }
 }

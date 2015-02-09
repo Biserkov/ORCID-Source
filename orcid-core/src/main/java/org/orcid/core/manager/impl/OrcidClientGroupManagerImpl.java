@@ -573,6 +573,8 @@ public class OrcidClientGroupManagerImpl implements OrcidClientGroupManager {
         OrcidProfile orcidProfile = new OrcidProfile();
         orcidProfile.setType(OrcidType.GROUP);
         orcidProfile.setGroupType(orcidClientGroup.getType());
+        if(!PojoUtil.isEmpty(orcidClientGroup.getGroupOrcid()))
+            orcidProfile.setOrcidIdentifier(orcidClientGroup.getGroupOrcid());
         OrcidHistory orcidHistory = new OrcidHistory();
         orcidProfile.setOrcidHistory(orcidHistory);
         orcidHistory.setClaimed(new Claimed(true));

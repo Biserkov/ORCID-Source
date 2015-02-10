@@ -29,12 +29,8 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.orcid.api.common.WebDriverHelper;
 import org.orcid.integration.blackbox.helper.InitializeDataHelper;
 import org.orcid.integration.blackbox.helper.OauthHelper;
 import org.orcid.jaxb.model.clientgroup.GroupType;
@@ -54,7 +50,7 @@ import com.sun.jersey.api.client.ClientResponse;
  * 
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "classpath:test-oauth-orcid-api-client-context.xml" })
+@ContextConfiguration(locations = { "classpath:test-api-context.xml" })
 public class OauthAuthorizationCodeTest {    
     @Value("${org.orcid.web.base.url:http://localhost:8080/orcid-web}")
     private String webBaseUrl;
@@ -84,11 +80,7 @@ public class OauthAuthorizationCodeTest {
     @Resource
     private InitializeDataHelper initializeDataHelper;    
     @Resource
-    private OauthHelper oauthHelper;       
-
-    private WebDriver webDriver;
-    private WebDriverHelper webDriverHelper;
-
+    private OauthHelper oauthHelper;    
     
     @Before
     public void before() throws Exception {
@@ -108,21 +100,21 @@ public class OauthAuthorizationCodeTest {
     
     @After
     public void after() {
-        webDriver.quit();
+        oauthHelper.closeWebDriver();
     }    
     
     @Test
     public void useAuthorizationCodeWithValidScopesTest() throws InterruptedException, JSONException {        
-        String accessToken = oauthHelper.obtainAccessToken(client.getClientId(), client.getClientSecret(), "/orcid-works/create", email, password, getRedirectUri(), true);        
+        String accessToken = oauthHelper.obtainAccessToken(client1ClientId, client1ClientSecret, "/orcid-works/create", email, password, redirectUri, true);        
         assertNotNull(accessToken);
         assertFalse(PojoUtil.isEmpty(accessToken));
     }
     
     @Test
     public void useAuthorizationCodeWithInalidScopesTest() throws InterruptedException, JSONException {
-        String authorizationCode = oauthHelper.getAuthorizationCode(client.getClientId(), "/orcid-works/create", email, password, true);
+        String authorizationCode = oauthHelper.getAuthorizationCode(client1ClientId, "/orcid-works/create", email, password, true);
         assertFalse(PojoUtil.isEmpty(authorizationCode));        
-        ClientResponse tokenResponse = oauthHelper.getClientResponse(client.getClientId(), client.getClientSecret(), "/orcid-works/update", getRedirectUri(), authorizationCode);
+        ClientResponse tokenResponse = oauthHelper.getClientResponse(client1ClientId, client1ClientSecret, "/orcid-works/update", redirectUri, authorizationCode);
         assertEquals(401, tokenResponse.getStatus());  
         OrcidMessage result = tokenResponse.getEntity(OrcidMessage.class);
         assertNotNull(result);
@@ -132,9 +124,9 @@ public class OauthAuthorizationCodeTest {
     
     @Test
     public void useAuthorizationCodeWithoutScopesTest() throws InterruptedException, JSONException {
-        String authorizationCode = oauthHelper.getAuthorizationCode(client.getClientId(), "/orcid-works/create", email, password, true);
+        String authorizationCode = oauthHelper.getAuthorizationCode(client1ClientId, "/orcid-works/create", email, password, true);
         assertFalse(PojoUtil.isEmpty(authorizationCode));
-        ClientResponse tokenResponse = oauthHelper.getClientResponse(client.getClientId(), client.getClientSecret(), null, getRedirectUri(), authorizationCode);
+        ClientResponse tokenResponse = oauthHelper.getClientResponse(client1ClientId, client1ClientSecret, null, redirectUri, authorizationCode);
         assertEquals(200, tokenResponse.getStatus());
         String body = tokenResponse.getEntity(String.class);
         JSONObject jsonObject = new JSONObject(body);
@@ -145,9 +137,9 @@ public class OauthAuthorizationCodeTest {
     
     @Test
     public void useClientCredentialsGrantTypeScope() throws InterruptedException, JSONException {
-        String authorizationCode = oauthHelper.getAuthorizationCode(client.getClientId(), "/orcid-works/create", email, password, true);
+        String authorizationCode = oauthHelper.getAuthorizationCode(client1ClientId, "/orcid-works/create", email, password, true);
         assertFalse(PojoUtil.isEmpty(authorizationCode));
-        ClientResponse tokenResponse = oauthHelper.getClientResponse(client.getClientId(), client.getClientSecret(), "/orcid-works/create /webhook", getRedirectUri(), authorizationCode);
+        ClientResponse tokenResponse = oauthHelper.getClientResponse(client1ClientId, client1ClientSecret, "/orcid-works/create /webhook", redirectUri, authorizationCode);
         assertEquals(200, tokenResponse.getStatus());
         String body = tokenResponse.getEntity(String.class);
         JSONObject jsonObject = new JSONObject(body);
@@ -158,7 +150,7 @@ public class OauthAuthorizationCodeTest {
     
     @Test
     public void authorizationCodeExpiresAfterXMinutesTest() throws InterruptedException, JSONException {
-        String authorizationCode = oauthHelper.getAuthorizationCode(client.getClientId(), "/orcid-works/create", email, password, true);
+        String authorizationCode = oauthHelper.getAuthorizationCode(client1ClientId, "/orcid-works/create", email, password, true);
         assertFalse(PojoUtil.isEmpty(authorizationCode));
         
         OrcidOauth2AuthoriziationCodeDetail authorizationCodeEntity = orcidOauth2AuthoriziationCodeDetailDao.find(authorizationCode);
@@ -170,7 +162,7 @@ public class OauthAuthorizationCodeTest {
         authorizationCodeEntity.setDateCreated(dateCreated);
         orcidOauth2AuthoriziationCodeDetailDao.merge(authorizationCodeEntity);
         
-        ClientResponse tokenResponse = oauthHelper.getClientResponse(client.getClientId(), client.getClientSecret(), "/orcid-works/create /webhook", getRedirectUri(), authorizationCode);
+        ClientResponse tokenResponse = oauthHelper.getClientResponse(client1ClientId, client1ClientSecret, "/orcid-works/create /webhook", redirectUri, authorizationCode);
         assertEquals(400, tokenResponse.getStatus());
         OrcidMessage result = tokenResponse.getEntity(OrcidMessage.class);
         assertNotNull(result);

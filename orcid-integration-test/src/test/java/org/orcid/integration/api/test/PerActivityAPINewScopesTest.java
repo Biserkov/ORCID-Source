@@ -128,7 +128,7 @@ public class PerActivityAPINewScopesTest {
         if(user == null)
             user = idh.createProfile(email, password, null);
         if(member == null)
-            member = idh.createMember(GroupType.BASIC);
+            member = idh.createMember(GroupType.BASIC, null);
         if(client == null)
             client = idh.createClient(member.getGroupOrcid().getValue(), getRedirectUri(), null, null);                
     }

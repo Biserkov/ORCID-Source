@@ -21,7 +21,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.orcid.api.common.OrcidApiConstants.EXTERNAL_IDENTIFIER_PATH;
+import static org.orcid.core.api.OrcidApiConstants.EXTERNAL_IDENTIFIER_PATH;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -36,8 +36,8 @@ import javax.ws.rs.core.MultivaluedMap;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.orcid.api.common.OrcidApiConstants;
 import org.orcid.api.common.OrcidClientHelper;
+import org.orcid.core.api.OrcidApiConstants;
 import org.orcid.core.manager.ClientDetailsManager;
 import org.orcid.core.oauth.OrcidOauth2TokenDetailService;
 import org.orcid.core.security.DefaultPermissionChecker;
@@ -329,6 +329,7 @@ public class T2OrcidOAuthApiClientIntegrationTest extends BaseT2OrcidOAuthApiCli
 
         // test creating a record works with token
         OrcidMessage message = orcidClientDataHelper.createFromXML(OrcidClientDataHelper.ORCID_INTERNAL_NO_SPONSOR_XML);
+        message.getOrcidProfile().setOrcidHistory(null);
         ClientResponse clientResponse = oauthT2Client1_2_rc6.createProfileXML(message, accessToken);
         assertEquals(201, clientResponse.getStatus());
         MultivaluedMap<String, String> map = clientResponse.getHeaders();

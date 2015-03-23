@@ -23,6 +23,9 @@ import javax.annotation.Resource;
 
 import org.orcid.core.manager.OrgManager;
 import org.orcid.core.manager.SourceManager;
+import org.orcid.jaxb.model.common.OrganizationHolder;
+import org.orcid.jaxb.model.message.Iso3166Country;
+import org.orcid.jaxb.model.message.Organization;
 import org.orcid.persistence.dao.OrgDao;
 import org.orcid.persistence.dao.OrgDisambiguatedDao;
 import org.orcid.persistence.jpa.entities.AmbiguousOrgEntity;
@@ -105,7 +108,7 @@ public class OrgManagerImpl implements OrgManager {
     @Override
     public List<OrgEntity> getOrgsByName(String searchTerm) {
     	return orgDao.getOrgsByName(searchTerm);
-    }
+    }            
     
     @Override
     public OrgEntity createUpdate(OrgEntity org) {
@@ -137,5 +140,39 @@ public class OrgManagerImpl implements OrgManager {
         }
         return orgDao.merge(org);
     }
-
+    
+    
+    @Override
+    public OrgEntity getOrgEntity(OrganizationHolder holder) {
+        if(holder == null)
+            return null;
+        
+        OrgEntity orgEntity = new OrgEntity();
+        org.orcid.jaxb.model.common.Organization organization = holder.getOrganization();
+        orgEntity.setName(organization.getName());
+        org.orcid.jaxb.model.common.OrganizationAddress address = organization.getAddress();
+        orgEntity.setCity(address.getCity());
+        orgEntity.setRegion(address.getRegion());
+        orgEntity.setCountry(Iso3166Country.fromValue(address.getCountry().value()));
+        if (organization.getDisambiguatedOrganization() != null && organization.getDisambiguatedOrganization().getDisambiguatedOrganizationIdentifier() != null) {
+            orgEntity.setOrgDisambiguated(orgDisambiguatedDao.findBySourceIdAndSourceType(organization.getDisambiguatedOrganization()
+                    .getDisambiguatedOrganizationIdentifier(), organization.getDisambiguatedOrganization().getDisambiguationSource()));
+        }
+        return createUpdate(orgEntity);        
+    }
+    
+    @Override
+    public OrgEntity getOrgEntity(Organization org) {
+        String name = org.getName();
+        String city = "";
+        String region = "";
+        Iso3166Country country = null;
+        if(org.getAddress() != null) {
+            city = org.getAddress().getCity();
+            region = org.getAddress().getRegion();
+            country = org.getAddress().getCountry();
+                    
+        }
+        return orgDao.findByNameCityRegionAndCountry(name, city, region, country);        
+    }
 }

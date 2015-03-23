@@ -20,7 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.orcid.api.common.OrcidApiConstants.STATUS_OK_MESSAGE;
+import static org.orcid.core.api.OrcidApiConstants.STATUS_OK_MESSAGE;
 
 import java.util.List;
 
@@ -593,12 +593,14 @@ public class T2OrcidApiClientIntegrationTest extends AbstractT2ClientIntegration
 
     private ClientResponse createFullOrcidJSON() throws JAXBException {
         OrcidMessage message = getInternalFullOrcidMessage(OrcidClientDataHelper.ORCID_INTERNAL_NO_SPONSOR_XML);
+        message.getOrcidProfile().setOrcidHistory(null);        
         ClientResponse response = t2Client1_2_rc6.createProfileJson(message);
         return response;
     }
 
     private ClientResponse createSponsor() throws JAXBException {
         OrcidMessage message = getInternalSponsor();
+        message.getOrcidProfile().setOrcidHistory(null);
         ClientResponse response = t2Client1_2_rc6.createProfileJson(message);
         return response;
     }

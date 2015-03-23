@@ -329,17 +329,17 @@
 						<div class="bulk-edit">
 							<div class="row">
 								<div class="col-md-7 col-sm-7 col-xs-6">
-									<h4>Bulk edit</h4><span class="hide-bulk" ng-click="toggleBulkEdit()">Hide bulk edit</span>
+									<h4><@orcid.msg 'workspace.bulkedit.'/></h4><span class="hide-bulk" ng-click="toggleBulkEdit()"><@orcid.msg 'workspace.bulkedit.hide'/></span>
 									<ol>
-										<li>Select works: Click the checkbox beside each work. Use the checkbox to the right to select or deselect all.</li>
-										<li>Select editing action: Click the trash can to delete all selected works or click a privacy setting to apply that setting to all selected works.</li>
+										<li><@orcid.msg 'workspace.bulkedit.selectWorks'/></li>
+										<li><@orcid.msg 'workspace.bulkedit.selectAction'/></li>
 									</ol>
 								</div>
 								<div class="col-md-5 col-sm-5 col-xs-6">
 									<ul class="bulk-edit-toolbar">
 																			
 										<li class="bulk-edit-toolbar-item work-multiple-selector"><!-- Select all -->
-											<label>SELECT</label>											
+											<label><@orcid.msg 'workspace.bulkedit.select'/></label>
 											<div id="custom-control-x">
 												<div class="custom-control-x" >	
 													<div class="dropdown-custom-menu" id="dropdown-custom-menu" ng-click="toggleSelectMenu()">										
@@ -350,15 +350,15 @@
 													</div>
 													<div>
 														<ul class="dropdown-menu" role="menu" id="special-menu" ng-class="{'block': bulkDisplayToggle == true}">
-												          <li><a href="" ng-click="bulkChangeAll(true); bulkDisplayToggle = false;">All selected</a></li>
-												          <li><a href="" ng-click="bulkChangeAll(false); bulkDisplayToggle = false;">None selected</a></li>							          							          
+												          <li><a href="" ng-click="bulkChangeAll(true); bulkDisplayToggle = false;"><@orcid.msg 'workspace.bulkedit.selected.all'/></a></li>
+												          <li><a href="" ng-click="bulkChangeAll(false); bulkDisplayToggle = false;"><@orcid.msg 'workspace.bulkedit.selected.none'/></a></li>							          							          
 												        </ul>			
 													</div>
 												</div>
 											</div>
 										</li>
 										<li class="bulk-edit-toolbar-item"><!-- Privacy control -->
-											<label>EDIT</label>											
+											<label><@orcid.msg 'workspace.bulkedit.edit'/></label>
 											<div class="bulk-edit-privacy-control">
 												<@orcid.privacyToggle2 angularModel="groupPrivacy()" 
 													    questionClick=""
@@ -375,7 +375,7 @@
 													<div class="popover popover-tooltip top bulk-edit-popover" ng-show="showElement['Bulk-Edit'] == true">
 		                                             <div class="arrow"></div>
 			                                            <div class="popover-content">
-			                                                <span>Delete selected works</span>
+			                                                <span><@orcid.msg 'workspace.bulkedit.delete'/></span>
 			                                            </div>
 			                                        </div>
 												</div>
@@ -410,19 +410,45 @@
 							<strong><@orcid.msg 'workspace.bibtexImporter.parsingError'/></strong>
 						</div>
 						<span class="dotted-bar" ng-show="worksFromBibtex.length > 0"></span>
-					   	<div ng-repeat="work in worksFromBibtex" ng-cloak class="bottomBuffer">
+					   	
+					   	
+					   	<!-- Bibtex Import Results List -->
+					   	<div ng-repeat="work in worksFromBibtex" ng-cloak class="bottomBuffer">					   	
 					   		  <div class="row full-height-row">	  
-			        	       	  <div class="col-md-9">
-			        	          	<h3 class="workspace-title bibtex-work-title"><span>{{work.title.value}}</span></h3>
-			        	          </div>
-			        	          <div class="col-md-3 bibtex-options-menu">
+			        	       	  <div class="col-md-9 col-sm-9 col-xs-9">
+			        	          	<h3 ng-show="{{work.title.value != null}}" class="workspace-title bibtex-work-title">{{work.title.value}}</h3>
+			        	          	<h3 ng-show="{{work.title.value == null}}" class="workspace-title bibtex-work-title bibtex-content-missing">&lt;<@orcid.msg 'workspace.bibtexImporter.work.title_missing' />&gt;</h3>
+			        	          	
+			        	          	
+			        	          	<!-- Work Category --> 
+			        	          	<span class="info-detail" ng-show="{{work.workCategory.value.length > 0}}">{{work.workCategory.value | formatBibtexOutput}}</span>
+			        	          	<span class="bibtex-content-missing small-missing-info" ng-show="{{work.workCategory.value.length == 0}}">&lt;<@orcid.msg 'workspace.bibtexImporter.work.category_missing' />&gt;</span>
+			        	          	
+			        	          	<!-- Work Type -->
+			        	          	<span class="info-detail" ng-show="{{work.workType.value.length > 0}}">{{work.workType.value | formatBibtexOutput}}</span>
+			        	          	<span class="bibtex-content-missing small-missing-info" ng-show="{{work.workType.value.length == 0}}">&lt;<@orcid.msg 'workspace.bibtexImporter.work.type_missing' />&gt;</span>
+			        	          	
+			        	          	<!-- External identifiers -->
+			        	          	<span class="info-detail" ng-show="{{work.workExternalIdentifiers[0].workExternalIdentifierType.value.length > 0}}">
+			        	          		<span ng-repeat='ie in work.workExternalIdentifiers'><span
+		                                     ng-bind-html='ie | workExternalIdentifierHtml:$first:$last:work.workExternalIdentifiers.length'></span>
+		                                </span>
+			        	          	</span>
+			        	          	<span class="info-detail bibtex-content-missing" ng-show="{{work.workExternalIdentifiers[0].workExternalIdentifierType.value.length == 0}}"">&lt;<@orcid.msg 'workspace.bibtexImporter.work.external_id_missing' />&gt;</span>
+			        	          
+			        	          </div>			        	          
+			        	          <div class="col-md-3 col-sm-3 col-xs-3 bibtex-options-menu">			        	          	
 			        	          	<ul>
-			        	          		<li><a ng-click="rmWorkFromBibtex(work)" class="ignore glyphicon glyphicon-trash" title="Ignore"></a></li>
-			        	          		<li><a ng-click="addWorkFromBibtex(work)" class="save glyphicon glyphicon-floppy-disk" title="Save"></a></li>
+			        	          		<li><a ng-click="rmWorkFromBibtex(work)" class="ignore glyphicon glyphicon-trash bibtex-button" title="Ignore"></a></li>
+			        	          		<li><a ng-show="{{work.title.value != null && work.workCategory.value.length > 0 && work.workType.value.length > 0 && work.workExternalIdentifiers[0].workExternalIdentifierType.value.length > 0}}" ng-click="addWorkFromBibtex(work)" class="save glyphicon glyphicon-floppy-disk bibtex-button" title="Save"></a></li>
+			        	          		<li><a ng-show="{{work.title.value == null || work.workCategory.value.length == 0 || work.workType.value.length == 0 || work.workExternalIdentifiers[0].workExternalIdentifierType.value.length == 0}}" ng-click="editWorkFromBibtex(work)" class="save glyphicon glyphicon-pencil bibtex-button" title="Edit"></a></li>
+			        	          		<li><span ng-show="{{work.title.value == null || work.workCategory.value.length == 0 || work.workType.value.length == 0 || work.workExternalIdentifiers[0].workExternalIdentifierType.value.length == 0}}"><a ng-click="editWorkFromBibtex(work)"><i class="glyphicon glyphicon-exclamation-sign"></i><@orcid.msg 'workspace.bibtexImporter.work.warning' /></a></span></li>
 			        	          	</ul>
 		        	          	 </div>
 	        	          	 </div>
 		        	  	</div>
+		        	  	
+		        	  	
 					</div>
       	            <div ng-show="workspaceSrvc.displayWorks" class="workspace-accordion-content">
 	            		<#include "includes/work/add_work_modal_inc.ftl"/>

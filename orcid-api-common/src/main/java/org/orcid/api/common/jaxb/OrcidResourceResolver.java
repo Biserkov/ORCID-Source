@@ -34,21 +34,20 @@ public class OrcidResourceResolver implements LSResourceResolver {
 
     @Override
     public LSInput resolveResource(String type, String namespaceURI, String publicId, String systemId, String baseURI) {
-        if (shouldLoadFromClasspath(systemId)) {
-            OrcidLsInput lsInput = new OrcidLsInput(publicId, systemId, baseURI);
-            lsInput.setByteStream(getClass().getResourceAsStream("/" + systemId));
-            return lsInput;
-        }
-        return defaultResourceResolver.resolveResource(type, namespaceURI, publicId, systemId, baseURI);
+        OrcidLsInput lsInput = new OrcidLsInput(publicId, systemId, baseURI);
+        lsInput.setByteStream(getClass().getResourceAsStream(buildResourcePath(systemId)));
+        return lsInput;
     }
 
-    private boolean shouldLoadFromClasspath(String systemId) {
-        if (systemId != null) {
-            if (systemId.startsWith("orcid-common-") || systemId.equals("xml.xsd")) {
-                return true;
-            }
+    private String buildResourcePath(String systemId) {
+        if (systemId.startsWith("../")) {
+            return systemId.substring(2, systemId.length());
         }
-        return false;
+        // XXX Going to have to this properly at some point!
+        else if (systemId.endsWith("-2.0_rc1.xsd")) {
+            return "/record_2.0_rc1/" + systemId;
+        }
+        return "/" + systemId;
     }
 
 }

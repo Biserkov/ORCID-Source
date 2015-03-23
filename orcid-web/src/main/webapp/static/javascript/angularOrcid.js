@@ -997,7 +997,7 @@ orcidNgModule.factory("worksSrvc", ['$rootScope', function ($rootScope) {
                 };
             },
             putWork: function(work,sucessFunc, failFunc) {
-                console.log(work);
+                //console.log(work);
                 $.ajax({
                     url: getBaseUri() + '/works/work.json',
                     contentType: 'application/json;charset=UTF-8',
@@ -1006,6 +1006,7 @@ orcidNgModule.factory("worksSrvc", ['$rootScope', function ($rootScope) {
                     data: angular.toJson(work),
                     success: function(data) {
                         sucessFunc(data);
+                        console.log(data);
                     }
                 }).fail(function(){
                     failFunc();
@@ -1458,29 +1459,42 @@ orcidNgModule.filter('workExternalIdentifierHtml', function(){
     };
 });
 
-//We should merge this one with workExternalIdentifierHtml
+//Currently being used in Fundings only
 orcidNgModule.filter('externalIdentifierHtml', function(){
     return function(externalIdentifier, first, last, length){
+    	
         var output = '';
 
         if (externalIdentifier == null) return output;
-        var type = externalIdentifier.type.value;;
-        if (type != null) output = output + type.toUpperCase() + ": ";
-        var value = null;
-        if(externalIdentifier.value != null)
-            value = externalIdentifier.value.value;
+        
+        var type = externalIdentifier.type.value;
+        
+        //If type is set always come: "grant_number"
+        if (type != null) output += om.get('funding.add.external_id.value.label.grant') + ": ";        
+        
+        var value = null;        
+        if(externalIdentifier.value != null){
+        	value = externalIdentifier.value.value;
+        }            
+        
         var link = null;
         if(externalIdentifier.url != null)
             link = externalIdentifier.url.value;
-
-        if (link != null && value != null)
-            output = output + "<a href='" + link + "' target='_blank'>" + value + "</a>";
-        else if(value != null)
-            output = output + " " + value;
-        else if(link != null)
-            output = output + "<a href='" + link + "' target='_blank'>" + link + "</a>";
+       
+        if(link != null) {
+        	if (link.search(/^http[s]?\:\/\//) == -1)
+            	link = 'http://' + link;
+        	if(value != null) {
+        		output += "<a href='" + link + "' class='truncate-anchor' target='_blank'>" + value + "</a>";
+        	} else {
+        		output = om.get('funding.add.external_id.url.label.grant') + ": <a href='" + link + "' class='truncate-anchor' target='_blank'>" + link + "</a>";
+        	}
+        } else if(value != null) {
+        	output = output + " " + value;
+        }
+      
         if (length > 1 && !last) output = output + ',';
-        return output;
+        	return output;
     };
 });
 
@@ -3249,7 +3263,7 @@ orcidNgModule.controller('FundingCtrl',['$scope', '$compile', '$filter', 'fundin
     $scope.privacyHelp = {};
     $scope.editTranslatedTitle = false;
     $scope.lastIndexedTerm = null;
-    $scope.showElement = {};
+    $scope.showElement = {};    
     $scope.emptyExtId = {
             "errors": [],
             "type": {
@@ -3314,7 +3328,7 @@ orcidNgModule.controller('FundingCtrl',['$scope', '$compile', '$filter', 'fundin
 
     $scope.showDetailsMouseClick = function(key, $event) {
         $event.stopPropagation();
-        $scope.moreInfo[key]=!$scope.moreInfo[key];
+        $scope.moreInfo[key] = !$scope.moreInfo[key];
     };
 
     $scope.closeMoreInfo = function(key) {
@@ -3913,7 +3927,7 @@ orcidNgModule.controller('WorkCtrl', ['$scope', '$compile', '$filter', 'worksSrv
     $scope.delCountVerify = 0;
     $scope.bulkDeleteCount = 0;
     $scope.bulkDeleteSubmit = false;
-
+    
     $scope.sortState = new ActSortState(GroupedActivities.ABBR_WORK);
     $scope.sort = function(key) {
         $scope.sortState.sortBy(key);
@@ -4014,18 +4028,21 @@ orcidNgModule.controller('WorkCtrl', ['$scope', '$compile', '$filter', 'worksSrv
                 for (j in parsed) {
                     (function (cur) {
                         bibtexEntry = parsed[j].entryType.toLowerCase();
+                        
                         if(bibtexEntry != 'preamble' && bibtexEntry != 'comment'){ //Filtering @PREAMBLE and @COMMENT
                             worksSrvc.getBlankWork(function(data) {
                                 populateWorkAjaxForm(cur,data);
                                 $scope.worksFromBibtex.push(data);
-                                $scope.bibtexCancelLink = true;
+                                $scope.bibtexCancelLink = true;                                
                             });
                         }
                     })(parsed[j]);
                 };
+                
             });
                $scope.textFiles = null;
                $scope.bibtexParsingError = false;
+               
         } catch (err) {
             $scope.bibtexParsingError = true;
         };
@@ -4037,10 +4054,18 @@ orcidNgModule.controller('WorkCtrl', ['$scope', '$compile', '$filter', 'worksSrv
         if($scope.worksFromBibtex.length == 0) $scope.bibtexCancelLink = false;
     };
 
-    $scope.addWorkFromBibtex = function(work) {
+    $scope.editWorkFromBibtex = function(work) {
         $scope.bibtextWorkIndex = $scope.worksFromBibtex.indexOf(work);
         $scope.bibtextWork = true;
-        $scope.addWorkModal($scope.worksFromBibtex[$scope.bibtextWorkIndex]);
+        $scope.addWorkModal($scope.worksFromBibtex[$scope.bibtextWorkIndex]);        
+        
+    };
+    
+    $scope.addWorkFromBibtex = function(work) {
+    	$scope.bibtextWorkIndex = $scope.worksFromBibtex.indexOf(work);    	
+    	$scope.editWork = $scope.worksFromBibtex[$scope.bibtextWorkIndex];
+    	$scope.bibtextWork = true;    	        
+        $scope.putWork();        
     };
 
     $scope.openBibTextWizard = function () {
@@ -4058,7 +4083,7 @@ orcidNgModule.controller('WorkCtrl', ['$scope', '$compile', '$filter', 'worksSrv
     // Check for the various File API support.
     if (window.File && window.FileReader && window.FileList && window.Blob) {
         $scope.canReadFiles = true;
-    }
+    };
 
     $scope.toggleClickPrivacyHelp = function(key) {
         if (!document.documentElement.className.contains('no-touch'))
@@ -4211,14 +4236,18 @@ orcidNgModule.controller('WorkCtrl', ['$scope', '$compile', '$filter', 'worksSrv
         $scope.addingWork = true;
         $scope.editWork.errors.length = 0;
         worksSrvc.putWork($scope.editWork,
-            function(data){
-                if (data.errors.length == 0){
-                    $.colorbox.close();
-                    $scope.addingWork = false;
-
-                    if($scope.bibtextWork == true){
+            function(data){        	    
+                if (data.errors.length == 0) {
+                	if ($scope.bibtextWork == false){
+                		$.colorbox.close();
+                		$scope.addingWork = false;
+                	} else {
                         $scope.worksFromBibtex.splice($scope.bibtextWorkIndex, 1);
                         $scope.bibtextWork = false;
+                        $scope.addingWork = false;
+                        $scope.$apply();
+                        $.colorbox.close();
+                        $scope.worksSrvc.loadAbbrWorks(worksSrvc.constants.access_type.USER);
                     }
                 } else {
                     $scope.editWork = data;
@@ -7404,7 +7433,7 @@ orcidNgModule.controller('OauthAuthorizationController',['$scope', '$compile', '
                         if(is_authorize) {
                             orcidGA.gaPush(['_trackEvent', 'RegGrowth', 'Sign-In' , 'OAuth ' + orcidGA.buildClientString($scope.clientGroupName, $scope.clientName)]);
                             for(var i = 0; i < $scope.requestScopes.length; i++) {
-                                orcidGA.gaPush(['_trackEvent', 'RegGrowth', auth_scope_prefix + $scope.requestScopes[i] + ', OAuth ' + orcidGA.buildClientString($scope.clientGroupName, $scope.clientName)]);
+                                orcidGA.gaPush(['_trackEvent', 'RegGrowth', auth_scope_prefix + $scope.requestScopes[i], 'OAuth ' + orcidGA.buildClientString($scope.clientGroupName, $scope.clientName)]);
                             }
                         } else {
                             //Fire GA authorize-deny
@@ -7543,7 +7572,7 @@ orcidNgModule.controller('OauthAuthorizationController',['$scope', '$compile', '
                 orcidGA.gaPush(['_trackEvent', 'RegGrowth', 'New-Registration', 'OAuth '+ orcidGA.buildClientString($scope.clientGroupName, $scope.clientName)]);
                 if($scope.registrationForm.approved) {
                     for(var i = 0; i < $scope.requestScopes.length; i++) {
-                        orcidGA.gaPush(['_trackEvent', 'RegGrowth', auth_scope_prefix + $scope.requestScopes[i] + ', OAuth ' + orcidGA.buildClientString($scope.clientGroupName, $scope.clientName)]);
+                        orcidGA.gaPush(['_trackEvent', 'RegGrowth', auth_scope_prefix + $scope.requestScopes[i], 'OAuth ' + orcidGA.buildClientString($scope.clientGroupName, $scope.clientName)]);
                     }
                 } else {
                     //Fire GA register deny
@@ -7682,6 +7711,24 @@ orcidNgModule.controller('OauthAuthorizationController',['$scope', '$compile', '
     $scope.toggleLongDescription = function(orcid_scope) {
         $scope.showLongDescription[orcid_scope] = !$scope.showLongDescription[orcid_scope];
     };
+
+    document.onkeydown = function(e) {
+	    e = e || window.event;
+	    if (e.keyCode == 13) {	    	
+	    	if ( typeof location.search.split('client_id=')[1] == 'undefined' ){ //There is no clientID information		    	
+	    		if ($scope.showRegisterForm == true){
+		    		$scope.registerAndAuthorize();		    		
+		    	}else{
+		    		$scope.loginAndAuthorize();		    		
+		    	}		    	
+			}else{
+	    		$scope.authorize();
+	    	}
+	    }
+    };
+    
+    
+    
 }]);
 
 
@@ -8032,13 +8079,6 @@ orcidNgModule.controller('headerCtrl',['$scope', '$window', function ($scope, $w
 		}
 	}
 	
-	
-	
-	
-	
-	
-	
-	
 }]);
 
 orcidNgModule.directive('resize', function ($window) {
@@ -8069,4 +8109,11 @@ orcidNgModule.directive('resize', function ($window) {
 			$scope.$apply();
 		});
 	}
+});
+
+orcidNgModule.filter('formatBibtexOutput', function () {
+    return function (text) {
+		var str = text.replace(/[\-?_?]/, ' ');
+		return str.toUpperCase();
+    };
 });

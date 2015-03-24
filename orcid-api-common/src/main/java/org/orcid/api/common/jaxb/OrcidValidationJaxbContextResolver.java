@@ -41,6 +41,7 @@ import javax.xml.validation.SchemaFactory;
 import org.apache.log4j.Logger;
 import org.orcid.core.api.OrcidApiConstants;
 import org.orcid.core.exception.OrcidBadRequestException;
+import org.orcid.core.manager.impl.RandomFeatureManager;
 import org.orcid.core.web.filters.ApiVersionFilter;
 import org.orcid.jaxb.model.message.ErrorDesc;
 import org.orcid.jaxb.model.message.OrcidMessage;
@@ -49,6 +50,8 @@ import org.orcid.jaxb.model.record.Education;
 import org.orcid.jaxb.model.record.Employment;
 import org.orcid.jaxb.model.record.Funding;
 import org.orcid.jaxb.model.record.Work;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.xml.sax.SAXException;
@@ -63,6 +66,10 @@ import org.xml.sax.SAXException;
 @Consumes(value = { OrcidApiConstants.VND_ORCID_XML, OrcidApiConstants.ORCID_XML, MediaType.APPLICATION_XML, MediaType.WILDCARD })
 public class OrcidValidationJaxbContextResolver implements ContextResolver<Unmarshaller> {
 
+    @Autowired
+    RandomFeatureManager randomFeatureManager;
+    
+    
     private static final Logger logger = Logger.getLogger(OrcidValidationJaxbContextResolver.class);
     private static final Map<Class<?>, String> SCHEMA_FILENAME_PREFIX_BY_CLASS = new HashMap<>();
     static {
@@ -81,7 +88,7 @@ public class OrcidValidationJaxbContextResolver implements ContextResolver<Unmar
         try {
             Unmarshaller unmarshaller = getJAXBContext().createUnmarshaller();
             String schemaFilenamePrefix = getSchemaFilenamePrefix(type);
-            if (schemaFilenamePrefix != null) {
+            if (shouldSetSchema(type)) {
                 Schema schema = getSchema(schemaFilenamePrefix);
                 unmarshaller.setSchema(schema);
                 unmarshaller.setEventHandler(new OrcidValidationHandler());
@@ -94,6 +101,11 @@ public class OrcidValidationJaxbContextResolver implements ContextResolver<Unmar
         }
     }
 
+    private boolean shouldSetSchema(Class<?> type) {
+        if (!type.equals(OrcidMessage.class)) return true;
+        return randomFeatureManager.isORCID_MESSAGE_STRONG_VALIDATION();
+        
+    }
     private JAXBContext getJAXBContext() {
         if (jaxbContext == null) {
             try {
